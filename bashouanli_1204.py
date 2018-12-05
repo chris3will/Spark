@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common.exceptions import UnexpectedAlertPresentException
+
 import time
 import os
 from selenium.webdriver.common.keys import Keys
@@ -38,6 +40,8 @@ def tologin(a):
 
 
 def dealwithmonth():
+
+    
     pieces=0#下载数
     #2016年是闰年2-29
     monthday = {}
@@ -54,9 +58,15 @@ def dealwithmonth():
     monthday[11] = 30
     monthday[9] = 30
     data0 = ""
-    kk = 1  #月份
+    kk = 9  #月份
     while (kk <= 12 or int(data0.replace("-", "")) <= 20171231):
-        print("这是",kk," 月")
+        print("这是", kk, " 月")
+        localtime = time.asctime( time.localtime(time.time()) )
+        with open('timenote.txt', 'a') as fi:
+            fi.write(str(kk))
+            fi.write(str(localtime))
+            fi.write("\n")
+        print ("本地时间为 :", localtime)
         days = monthday[kk]
         fg=""
         if kk < 10:
@@ -64,7 +74,8 @@ def dealwithmonth():
         else:
             fg = "{k}".format(k=kk)
         data0 = "2017-{k}-01".format(k=fg)
-        data1 = "2017-{k}-{a}".format(a=days,k=fg)
+        data1 = "2017-{k}-{a}".format(a=days, k=fg)
+        thelast="2017-{k}-{a}".format(a=days,k=fg)
         #完成对每个月的初始化
         flag0,flag1=0,0
         #每个月默认的初始大循环
@@ -78,16 +89,16 @@ def dealwithmonth():
 
         btn=driver.find_element_by_id("advanceSearchBtn")
         btn.click()
-        time.sleep(1.8)
+        time.sleep(3)
         foundnum = driver.find_element_by_xpath("//span[contains(@id,'numFound')]").text
 
         tempmon = 0
         #print(flag1,flag0,monthday[kk])
         running = 1
-        flap = 0
+        flap = 0#本月总数
         foundnum = driver.find_element_by_xpath("//span[contains(@id,'numFound')]").text
         flap=int(foundnum)
-        while (running):
+        while (running and flag0<=flag1):
             #确保完成每个月内的小循环
             print("当前正在处理第 ",kk," 月………………")
             
@@ -95,7 +106,7 @@ def dealwithmonth():
             print("当前flag如下: ",flag0,flag1)
             foundnum = driver.find_element_by_xpath("//span[contains(@id,'numFound')]").text
             print(foundnum)
-            while (int(foundnum) > 500 and flag1>flag0):
+            while (int(foundnum) > 500 and flag0<flag1):
                 #只对同月操作,且只有当前查找数目大于500，能不一次性处理下才进行该循环得到可处理的数目
                 flag1 -= 1
                 data1 = data1[0:-2] + str(int(data1[-2] + data1[-1]) - 1)
@@ -103,18 +114,25 @@ def dealwithmonth():
                 driver.execute_script(js1)
                 btn=driver.find_element_by_id("advanceSearchBtn")
                 btn.click()
-                time.sleep(3)
+                time.sleep(1.5)
                 foundnum = driver.find_element_by_xpath("//span[contains(@id,'numFound')]").text
                 print(foundnum)
         
             
             while (tempmon < int(foundnum)):
-                time.sleep(1)
+                js="var q=document.documentElement.scrollTop=100000"  
+                driver.execute_script(js)
+                time.sleep(0.7)
                 a=dealevery()
+                
                 tempmon += a
                 btn_next = driver.find_element_by_xpath("//a[contains(@rel,'next')]")
                 btn_next.click()
+                if (tempmon >= flap):
+                    break
                 if (a == 0):
+                    if data1 == thelast:
+                        running=0
                     break
                 print("本月已经下载 ",tempmon," 份.")
             
@@ -123,7 +141,7 @@ def dealwithmonth():
                 running=0
             else:
                 print("已到达本次搜索浏览上限，即50次.")
-                time.sleep(1)
+                time.sleep(0.1)
                 data0 = "2017-{k}-{b}".format(k=fg,b=str(int(data1[-2] + data1[-1]) + 1))
                 data1 = "2017-{k}-{a}".format(a=days, k=fg)
                 flag0 = int(data0[-2]+data0[-1])#记录新小循环的开始日期
