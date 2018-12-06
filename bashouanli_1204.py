@@ -15,8 +15,8 @@ pages = 0  #下载到了第几页
 def dealevery():
     #对每一小页进行处理，即获取10份word
     add = 0
-    x=random.randint(0,1)
-    time.sleep(x)
+    x=random.randint(0,10)
+    time.sleep(x*0.05)
     suba = driver.find_elements_by_css_selector(".generateWord.font-color")
     if (suba):
         for i in range(0,len(suba)-1):
@@ -58,12 +58,12 @@ def dealwithmonth():
     monthday[11] = 30
     monthday[9] = 30
     data0 = ""
-    kk = 9  #月份
-    while (kk <= 12 or int(data0.replace("-", "")) <= 20171231):
+    kk = 1  #月份
+    while (kk <= 12 or int(data0.replace("-", "")) <= 20161231):
         print("这是", kk, " 月")
         localtime = time.asctime( time.localtime(time.time()) )
         with open('timenote.txt', 'a') as fi:
-            fi.write(str(kk))
+            fi.write(str(kk)+" ")
             fi.write(str(localtime))
             fi.write("\n")
         print ("本地时间为 :", localtime)
@@ -73,9 +73,9 @@ def dealwithmonth():
             fg = "0{k}".format(k=kk)
         else:
             fg = "{k}".format(k=kk)
-        data0 = "2017-{k}-01".format(k=fg)
-        data1 = "2017-{k}-{a}".format(a=days, k=fg)
-        thelast="2017-{k}-{a}".format(a=days,k=fg)
+        data0 = "2014-{k}-01".format(k=fg)
+        data1 = "2014-{k}-{a}".format(a=days, k=fg)
+        thelast="2014-{k}-{a}".format(a=days,k=fg)
         #完成对每个月的初始化
         flag0,flag1=0,0
         #每个月默认的初始大循环
@@ -85,11 +85,12 @@ def dealwithmonth():
         js1="var end=document.getElementById(\"judgementDateEnd\").value=\"{end1}\"".format(end1=data1)
         driver.execute_script(js0)
         driver.execute_script(js1)
-        time.sleep(1)
+        time.sleep(0.3)
 
         btn=driver.find_element_by_id("advanceSearchBtn")
         btn.click()
-        time.sleep(3)
+        time.sleep(3.3)
+        #foundum=driver.find_element_by_css_seletor
         foundnum = driver.find_element_by_xpath("//span[contains(@id,'numFound')]").text
 
         tempmon = 0
@@ -98,7 +99,9 @@ def dealwithmonth():
         flap = 0#本月总数
         foundnum = driver.find_element_by_xpath("//span[contains(@id,'numFound')]").text
         flap=int(foundnum)
-        while (running and flag0<=flag1):
+        while (running and flag0<flag1):
+            flag0 = int(data0[-2]+data0[-1])#记录新小循环的开始日期
+            flag1 = int(data1[-2] + data1[-1]) #记录新小循环的终止日期
             #确保完成每个月内的小循环
             print("当前正在处理第 ",kk," 月………………")
             
@@ -122,7 +125,7 @@ def dealwithmonth():
             while (tempmon < int(foundnum)):
                 js="var q=document.documentElement.scrollTop=100000"  
                 driver.execute_script(js)
-                time.sleep(0.7)
+                time.sleep(0.5)
                 a=dealevery()
                 
                 tempmon += a
@@ -130,6 +133,7 @@ def dealwithmonth():
                 btn_next.click()
                 if (tempmon >= flap):
                     break
+                
                 if (a == 0):
                     if data1 == thelast:
                         running=0
@@ -137,27 +141,32 @@ def dealwithmonth():
                 print("本月已经下载 ",tempmon," 份.")
             
         
-            if flap <= tempmon:
+            if flap <= tempmon or flag1==days:
                 running=0
             else:
-                print("已到达本次搜索浏览上限，即50次.")
+                print("已到达本次搜索浏览上限！！")
                 time.sleep(0.1)
-                data0 = "2017-{k}-{b}".format(k=fg,b=str(int(data1[-2] + data1[-1]) + 1))
-                data1 = "2017-{k}-{a}".format(a=days, k=fg)
+                data0 = "2014-{k}-{b}".format(k=fg,b=str(flag1 + 1))
+                data1 = "2014-{k}-{a}".format(a=days, k=fg)
                 flag0 = int(data0[-2]+data0[-1])#记录新小循环的开始日期
                 flag1 = int(data1[-2] + data1[-1]) #记录新小循环的终止日期
-            
+
+                
+
+
                 js0="var begin=document.getElementById(\"judgementDateStart\").value=\"{begin1}\"".format(begin1=data0)
                 js1="var end=document.getElementById(\"judgementDateEnd\").value=\"{end1}\"".format(end1=data1)
                 driver.execute_script(js0)
                 driver.execute_script(js1)
+                btn=driver.find_element_by_id("advanceSearchBtn")
+                btn.click()
                 time.sleep(1)
             
 
         #准备看看是否进入下一个月
         pieces+=tempmon
         if flag1 == monthday[kk] :
-            #这个月的内容已被处理完
+            #这个月的内容已被处理完 
             if kk == 12:
                 print("结束")
             else:
@@ -165,21 +174,22 @@ def dealwithmonth():
     #kk += 1  #对每一个月进行遍历，在每一次大循环下将案例遍历干净
 
 
-os.makedirs('./bsword', exist_ok=True)
+os.makedirs('G:/bsword', exist_ok=True)
 #初始化chrome插件,默认安装目录
 #本来想在此处尝试能否在程序运行中修改默认下载地址，可以起到分类的作用，但好像不行
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_experimental_option("prefs", {
-    "download.default_directory": r"D:\code\tlpython\Spark\bsword",
+    "download.default_directory": r"G:\bsword",
     "download.prompt_for_download": False,
     "safebrowsing.enabled":True
 })
 global driver
 driver = webdriver.Chrome('D:\chromedriver_win32\chromedriver', chrome_options=chrome_options)
-driver.get('http://www.lawsdata.com/?q=eyJtIjoiYWR2YW5jZSIsImEiOnsidGV4dHMiOlt7InR5cGUiOiJhbGwiLCJzdWJUeXBlIjoiIiwidmFsdWUiOiLmiJDpg73luILplKbmsZ/ljLrkurrmsJHms5XpmaIg57y65bitIn1dLCJjYXNlVHlwZSI6WyIyIl0sInByb2NlZHVyZUlkIjpbIjEiXSwiaW5zdHJ1bWVudFR5cGVJZCI6WyIxIl0sImp1ZGdlbWVudFllYXIiOiIyMDE3LTIwMTciLCJmdXp6eU1lYXN1cmUiOiIwIn0sInNtIjp7InRleHRTZWFyY2giOlsic2luZ2xlIl0sImxpdGlnYW50U2VhcmNoIjpbInBhcmFncmFwaCJdfX0=&s=')
+#driver.get('http://www.lawsdata.com/?q=eyJtIjoiYWR2YW5jZSIsImEiOnsidGV4dHMiOlt7InR5cGUiOiJhbGwiLCJzdWJUeXBlIjoiIiwidmFsdWUiOiLmiJDpg73luILplKbmsZ/ljLrkurrmsJHms5XpmaIg57y65bitIn1dLCJjYXNlVHlwZSI6WyIyIl0sInByb2NlZHVyZUlkIjpbIjEiXSwiaW5zdHJ1bWVudFR5cGVJZCI6WyIxIl0sImp1ZGdlbWVudFllYXIiOiIyMDE3LTIwMTciLCJmdXp6eU1lYXN1cmUiOiIwIn0sInNtIjp7InRleHRTZWFyY2giOlsic2luZ2xlIl0sImxpdGlnYW50U2VhcmNoIjpbInBhcmFncmFwaCJdfX0=&s=')
 #driver.get('http://www.lawsdata.com/?q=eyJtIjoiYWR2YW5jZSIsImEiOnsidGV4dHMiOlt7InR5cGUiOiJhbGwiLCJzdWJUeXBlIjoiIiwidmFsdWUiOiLmiJDpg73luILplKbmsZ/ljLrkurrmsJHms5XpmaIg57y65bitIn1dLCJjYXNlVHlwZSI6WyIyIl0sInByb2NlZHVyZUlkIjpbIjEiXSwiaW5zdHJ1bWVudFR5cGVJZCI6WyIxIl0sImp1ZGdlbWVudFllYXIiOiIyMDE0LTIwMTciLCJqdWRnZW1lbnREYXRlU3RhcnQiOiIyMDE3LTEyLTAxIiwianVkZ2VtZW50RGF0ZUVuZCI6IjIwMTctMTItMjAiLCJmdXp6eU1lYXN1cmUiOiIwIn0sInNtIjp7InRleHRTZWFyY2giOlsic2luZ2xlIl0sImxpdGlnYW50U2VhcmNoIjpbInBhcmFncmFwaCJdfX0=&s=')
-
-
+#driver.get("http://www.lawsdata.com/?q=eyJtIjoiYWR2YW5jZSIsImEiOnsidGV4dHMiOlt7InR5cGUiOiJhbGwiLCJzdWJUeXBlIjoiIiwidmFsdWUiOiLmiJDpg73luILplKbmsZ/ljLrkurrmsJHms5XpmaIg57y65bitIn1dLCJjYXNlVHlwZSI6WyIyIl0sInByb2NlZHVyZUlkIjpbIjEiXSwiaW5zdHJ1bWVudFR5cGVJZCI6WyIxIl0sImp1ZGdlbWVudFllYXIiOiIyMDE2LTIwMTYiLCJmdXp6eU1lYXN1cmUiOiIwIn0sInNtIjp7InRleHRTZWFyY2giOlsic2luZ2xlIl0sImxpdGlnYW50U2VhcmNoIjpbInBhcmFncmFwaCJdfX0=&s=")
+#driver.get("http://www.lawsdata.com/?q=eyJtIjoiYWR2YW5jZSIsImEiOnsidGV4dHMiOlt7InR5cGUiOiJhbGwiLCJzdWJUeXBlIjoiIiwidmFsdWUiOiLmiJDpg73luILplKbmsZ/ljLrkurrmsJHms5XpmaIg57y65bitIn1dLCJjYXNlVHlwZSI6WyIyIl0sInByb2NlZHVyZUlkIjpbIjEiXSwiaW5zdHJ1bWVudFR5cGVJZCI6WyIxIl0sImp1ZGdlbWVudFllYXIiOiIyMDE1LTIwMTUiLCJmdXp6eU1lYXN1cmUiOiIwIn0sInNtIjp7InRleHRTZWFyY2giOlsic2luZ2xlIl0sImxpdGlnYW50U2VhcmNoIjpbInBhcmFncmFwaCJdfX0=&s=")
+driver.get("http://www.lawsdata.com/?q=eyJtIjoiYWR2YW5jZSIsImEiOnsidGV4dHMiOlt7InR5cGUiOiJhbGwiLCJzdWJUeXBlIjoiIiwidmFsdWUiOiLmiJDpg73luILplKbmsZ/ljLrkurrmsJHms5XpmaIg57y65bitIn1dLCJjYXNlVHlwZSI6WyIyIl0sInByb2NlZHVyZUlkIjpbIjEiXSwiaW5zdHJ1bWVudFR5cGVJZCI6WyIxIl0sImp1ZGdlbWVudFllYXIiOiIyMDE0LTIwMTQiLCJmdXp6eU1lYXN1cmUiOiIwIn0sInNtIjp7InRleHRTZWFyY2giOlsic2luZ2xlIl0sImxpdGlnYW50U2VhcmNoIjpbInBhcmFncmFwaCJdfX0=&s=")
 time.sleep(3)
 driver.maximize_window()
 #发现登陆这个预先检索过的网址会自动弹出登陆窗口，于是不必模拟点击
